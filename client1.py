@@ -10,79 +10,113 @@ class RagClient(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("RAG API Client")
-        self.geometry("800x600")
-        self.configure(bg="#f0f0f0")
+        self.geometry("900x650")
+        self.configure(bg="#ECEFF1")  # Light blue-gray background
 
+        # Make window resizable
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(2, weight=1)
 
-        # Connection status
-        self.connected = False
+        # Modern color scheme
+        self.bg_color = "#ECEFF1"
+        self.accent_color = "#0288D1"  # Blue
+        self.button_color = "#4CAF50"  # Green
+        self.text_color = "#212121"
+
+        # Top frame for status
+        top_frame = tk.Frame(self, bg=self.bg_color)
+        top_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
+        top_frame.grid_columnconfigure(0, weight=1)
+
         self.status_label = tk.Label(
-            self,
+            top_frame,
             text="Checking connection...",
-            fg="orange",
-            bg="#f0f0f0",
-            font=("Arial", 10),
+            fg="#F57C00",  # Orange
+            bg=self.bg_color,
+            font=("Helvetica", 11, "bold"),
         )
-        self.status_label.grid(
-            row=0, column=0, columnspan=2, sticky="w", padx=10, pady=5
-        )
+        self.status_label.pack(side=tk.LEFT)
 
         # Input frame
-        input_frame = tk.Frame(self, bg="#f0f0f0")
-        input_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10, pady=5)
+        input_frame = tk.Frame(self, bg=self.bg_color)
+        input_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
         input_frame.grid_columnconfigure(1, weight=1)
 
-        # Question input
         self.question_label = tk.Label(
-            input_frame, text="Enter your question:", bg="#f0f0f0", font=("Arial", 11)
+            input_frame,
+            text="Ask a Question:",
+            bg=self.bg_color,
+            fg=self.text_color,
+            font=("Helvetica", 12, "bold"),
         )
-        self.question_entry = tk.Entry(input_frame, font=("Arial", 11))
+        self.question_entry = tk.Entry(
+            input_frame,
+            font=("Helvetica", 11),
+            bg="white",
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground="#B0BEC5",
+            highlightcolor=self.accent_color,
+        )
         self.ask_button = tk.Button(
             input_frame,
             text="Ask",
             command=self.on_ask,
-            bg="#4CAF50",
+            bg=self.button_color,
             fg="white",
-            font=("Arial", 10, "bold"),
+            font=("Helvetica", 11, "bold"),
             relief="flat",
-            padx=10,
+            padx=15,
+            pady=5,
+            activebackground="#45A049",
+            cursor="hand2",
         )
 
-        self.question_label.grid(row=0, column=0, sticky="w", padx=(0, 5))
+        self.question_label.grid(row=0, column=0, sticky="w", padx=(0, 10))
         self.question_entry.grid(row=0, column=1, sticky="ew")
-        self.ask_button.grid(row=0, column=2, padx=5)
+        self.ask_button.grid(row=0, column=2, padx=10)
 
-        # Response area
-        response_frame = tk.Frame(self, bg="#f0f0f0")
-        response_frame.grid(
-            row=3, column=0, columnspan=2, sticky="nsew", padx=10, pady=10
-        )
+        # Response frame
+        response_frame = tk.Frame(self, bg=self.bg_color)
+        response_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=10)
         response_frame.grid_columnconfigure(0, weight=1)
         response_frame.grid_rowconfigure(0, weight=1)
 
         self.response_text = scrolledtext.ScrolledText(
             response_frame,
             wrap=tk.WORD,
-            font=("Arial", 11),
+            font=("Helvetica", 11),
             bg="white",
-            relief="sunken",
-            borderwidth=2,
+            fg=self.text_color,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=1,
+            highlightbackground="#B0BEC5",
+            padx=10,
+            pady=10,
         )
         self.response_text.grid(row=0, column=0, sticky="nsew")
 
+        # Bottom frame for copy button
+        bottom_frame = tk.Frame(self, bg=self.bg_color)
+        bottom_frame.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 20))
+
         self.copy_button = tk.Button(
-            response_frame,
+            bottom_frame,
             text="Copy Response",
             command=self.copy_response,
-            bg="#2196F3",
+            bg=self.accent_color,
             fg="white",
-            font=("Arial", 10),
+            font=("Helvetica", 10, "bold"),
             relief="flat",
+            padx=10,
+            pady=3,
+            activebackground="#0277BD",
+            cursor="hand2",
         )
-        self.copy_button.grid(row=1, column=0, sticky="e", pady=5)
+        self.copy_button.pack(side=tk.RIGHT)
 
+        # Start connection check
         threading.Thread(target=self.check_connection, daemon=True).start()
 
     def check_connection(self):
@@ -90,10 +124,10 @@ class RagClient(tk.Tk):
             response = requests.get("http://172.23.167.1:5000/health", timeout=5)
             response.raise_for_status()
             self.connected = True
-            self.status_label.config(text="Connected to server", fg="green")
+            self.status_label.config(text="Connected to server", fg="#4CAF50")
         except requests.exceptions.RequestException:
             self.connected = False
-            self.status_label.config(text="Not connected to server", fg="red")
+            self.status_label.config(text="Not connected to server", fg="#D32F2F")
 
     def on_ask(self):
         if not self.connected:
@@ -128,7 +162,7 @@ class RagClient(tk.Tk):
                 response_text = f"Error: {data['error']}"
                 self.response_text.insert(tk.END, response_text)
                 self.response_text.tag_add("error", "1.0", "end")
-                self.response_text.tag_config("error", foreground="red")
+                self.response_text.tag_config("error", foreground="#D32F2F")
             else:
                 answer = data.get("answer", "")
                 plain_text = answer.replace("**", "").replace("*", "").replace("#", "")
