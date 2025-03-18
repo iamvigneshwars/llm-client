@@ -2,88 +2,185 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
 
+import markdown2
 import requests
 
 
 class RagClient(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("RAG API Client")
+        self.title("Diamond Test Chatbot")
+        self.geometry("900x650")
+        self.configure(bg="#ECEFF1")  # Light blue-gray background
 
-        # Create GUI components
-        self.question_label = tk.Label(self, text="Enter your question:")
-        self.question_entry = tk.Entry(self, width=50)
-        self.debug_var = tk.BooleanVar()
-        self.debug_check = tk.Checkbutton(
-            self, text="Show sources", variable=self.debug_var
+        # Make window resizable
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+
+        # Modern color scheme
+        self.bg_color = "#ECEFF1"
+        self.accent_color = "#0288D1"  # Blue
+        self.button_color = "#4CAF50"  # Green
+        self.text_color = "#212121"
+
+        # Top frame for status
+        top_frame = tk.Frame(self, bg=self.bg_color)
+        top_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
+        top_frame.grid_columnconfigure(0, weight=1)
+
+        self.status_label = tk.Label(
+            top_frame,
+            text="Checking connection...",
+            fg="#F57C00",  # Orange
+            bg=self.bg_color,
+            font=("Helvetica", 11, "bold"),
         )
-        self.ask_button = tk.Button(self, text="Ask", command=self.on_ask)
+        self.status_label.pack(side=tk.LEFT)
+
+        # Input frame
+        input_frame = tk.Frame(self, bg=self.bg_color)
+        input_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
+        input_frame.grid_columnconfigure(1, weight=1)
+
+        self.question_label = tk.Label(
+            input_frame,
+            text="Ask a Question:",
+            bg=self.bg_color,
+            fg=self.text_color,
+            font=("Helvetica", 12, "bold"),
+        )
+        self.question_entry = tk.Entry(
+            input_frame,
+            font=("Helvetica", 11),
+            bg="white",
+            relief="flat",
+            highlightthickness=1,
+            highlightbackground="#B0BEC5",
+            highlightcolor=self.accent_color,
+        )
+        self.ask_button = tk.Button(
+            input_frame,
+            text="Ask",
+            command=self.on_ask,
+            bg=self.button_color,
+            fg="white",
+            font=("Helvetica", 11, "bold"),
+            relief="flat",
+            padx=15,
+            pady=5,
+            activebackground="#45A049",
+            cursor="hand2",
+        )
+
+        self.question_label.grid(row=0, column=0, sticky="w", padx=(0, 10))
+        self.question_entry.grid(row=0, column=1, sticky="ew")
+        self.ask_button.grid(row=0, column=2, padx=10)
+
+        # Response frame
+        response_frame = tk.Frame(self, bg=self.bg_color)
+        response_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=10)
+        response_frame.grid_columnconfigure(0, weight=1)
+        response_frame.grid_rowconfigure(0, weight=1)
+
         self.response_text = scrolledtext.ScrolledText(
-            self, width=80, height=20, wrap=tk.WORD
+            response_frame,
+            wrap=tk.WORD,
+            font=("Helvetica", 11),
+            bg="white",
+            fg=self.text_color,
+            relief="flat",
+            borderwidth=0,
+            highlightthickness=1,
+            highlightbackground="#B0BEC5",
+            padx=10,
+            pady=10,
         )
-        self.response_text.config(state=tk.DISABLED)
+        self.response_text.grid(row=0, column=0, sticky="nsew")
 
-        # Layout components
-        self.question_label.grid(row=0, column=0, sticky="w")
-        self.question_entry.grid(row=0, column=1, columnspan=2)
-        self.debug_check.grid(row=1, column=0, columnspan=2, sticky="w")
-        self.ask_button.grid(row=1, column=2)
-        self.response_text.grid(row=2, column=0, columnspan=3, pady=10)
+        # Bottom frame for copy button
+        bottom_frame = tk.Frame(self, bg=self.bg_color)
+        bottom_frame.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 20))
+
+        self.copy_button = tk.Button(
+            bottom_frame,
+            text="Copy Response",
+            command=self.copy_response,
+            bg=self.accent_color,
+            fg="white",
+            font=("Helvetica", 10, "bold"),
+            relief="flat",
+            padx=10,
+            pady=3,
+            activebackground="#0277BD",
+            cursor="hand2",
+        )
+        self.copy_button.pack(side=tk.RIGHT)
+
+        # Start connection check
+        threading.Thread(target=self.check_connection, daemon=True).start()
+
+    def check_connection(self):
+        try:
+            response = requests.get("http://172.23.167.1:5000/health", timeout=5)
+            response.raise_for_status()
+            self.connected = True
+            self.status_label.config(text="Connected to server", fg="#4CAF50")
+        except requests.exceptions.RequestException:
+            self.connected = False
+            self.status_label.config(text="Not connected to server", fg="#D32F2F")
 
     def on_ask(self):
-        """Handle the 'Ask' button click."""
+        if not self.connected:
+            messagebox.showerror("Error", "Not connected to the server")
+            return
+
         question = self.question_entry.get().strip()
         if not question:
             messagebox.showwarning("Warning", "Please enter a question")
             return
-        debug = self.debug_var.get()
 
-        # Disable button and show processing state
-        self.ask_button.config(text="Processing...", state=tk.DISABLED)
-        self.response_text.config(state=tk.NORMAL)
+        self.ask_button.config(text="Generating answer...", state=tk.DISABLED)
         self.response_text.delete(1.0, tk.END)
-        self.response_text.config(state=tk.DISABLED)
-
-        # Start a new thread for the API request
-        thread = threading.Thread(target=self.make_request, args=(question, debug))
+        thread = threading.Thread(target=self.make_request, args=(question,))
         thread.start()
 
-    def make_request(self, question, debug):
-        """Send a POST request to the RAG API."""
+    def make_request(self, question):
         try:
-            payload = {"question": question, "debug": debug}
+            payload = {"question": question}
             response = requests.post(
                 "http://172.23.167.1:5000/ask", json=payload, timeout=30
             )
-            response.raise_for_status()  # Raise an exception for bad status codes
+            response.raise_for_status()
             data = response.json()
             self.update_response(data)
         except requests.exceptions.RequestException as e:
             self.update_response({"error": str(e)})
 
     def update_response(self, data):
-        """Update the GUI with the API response."""
-
         def _update():
-            self.response_text.config(state=tk.NORMAL)
-            self.response_text.delete(1.0, tk.END)
             if "error" in data:
-                self.response_text.insert(tk.END, f"Error: {data['error']}\n")
+                response_text = f"Error: {data['error']}"
+                self.response_text.insert(tk.END, response_text)
+                self.response_text.tag_add("error", "1.0", "end")
+                self.response_text.tag_config("error", foreground="#D32F2F")
             else:
                 answer = data.get("answer", "")
-                self.response_text.insert(tk.END, "Answer:\n")
-                self.response_text.insert(tk.END, answer + "\n\n")
-                if "sources" in data and data["sources"]:
-                    self.response_text.insert(tk.END, "Sources:\n")
-                    for source in data["sources"]:
-                        page = source.get("page", "unknown")
-                        excerpt = source.get("excerpt", "")
-                        self.response_text.insert(tk.END, f"Page {page}: {excerpt}\n")
-            self.response_text.config(state=tk.DISABLED)
+                # Instead of stripping everything, preserve link URLs
+                plain_text = answer.replace("**", "").replace("*", "").replace("#", "")
+                # Replace Markdown links [text](URL) with "text (URL)"
+                import re
+
+                plain_text = re.sub(r"\[(.*?)\]\((.*?)\)", r"\1 (\2)", plain_text)
+                self.response_text.insert(tk.END, plain_text)
             self.ask_button.config(text="Ask", state=tk.NORMAL)
 
-        # Schedule the update on the main thread
         self.after(0, _update)
+
+    def copy_response(self):
+        text = self.response_text.get(1.0, tk.END).strip()
+        if text:
+            self.clipboard_clear()
+            self.clipboard_append(text)
 
 
 if __name__ == "__main__":
