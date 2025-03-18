@@ -2,7 +2,6 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, scrolledtext
 
-import markdown2
 import requests
 
 
@@ -11,16 +10,15 @@ class RagClient(tk.Tk):
         super().__init__()
         self.title("Diamond Test Chatbot")
         self.geometry("900x650")
-        self.configure(bg="#ECEFF1")  # Light blue-gray background
+        self.configure(bg="#ECEFF1")
 
-        # Make window resizable
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
         # Modern color scheme
         self.bg_color = "#ECEFF1"
-        self.accent_color = "#0288D1"  # Blue
-        self.button_color = "#4CAF50"  # Green
+        self.accent_color = "#0288D1"
+        self.button_color = "#4CAF50"
         self.text_color = "#212121"
 
         # Top frame for status
@@ -31,7 +29,7 @@ class RagClient(tk.Tk):
         self.status_label = tk.Label(
             top_frame,
             text="Checking connection...",
-            fg="#F57C00",  # Orange
+            fg="#F57C00",
             bg=self.bg_color,
             font=("Helvetica", 11, "bold"),
         )
@@ -49,15 +47,21 @@ class RagClient(tk.Tk):
             fg=self.text_color,
             font=("Helvetica", 12, "bold"),
         )
-        self.question_entry = tk.Entry(
+
+        self.question_entry = tk.Text(
             input_frame,
+            height=1,
             font=("Helvetica", 11),
             bg="white",
             relief="flat",
             highlightthickness=1,
             highlightbackground="#B0BEC5",
             highlightcolor=self.accent_color,
+            wrap=tk.WORD,
+            padx=5,
+            pady=5,
         )
+
         self.ask_button = tk.Button(
             input_frame,
             text="Ask",
@@ -76,7 +80,9 @@ class RagClient(tk.Tk):
         self.question_entry.grid(row=0, column=1, sticky="ew")
         self.ask_button.grid(row=0, column=2, padx=10)
 
-        # Response frame
+        self.question_entry.bind("<Return>", lambda event: self.on_ask())
+        self.question_entry.bind("<KeyRelease>", self.adjust_entry_height)
+
         response_frame = tk.Frame(self, bg=self.bg_color)
         response_frame.grid(row=2, column=0, sticky="nsew", padx=20, pady=10)
         response_frame.grid_columnconfigure(0, weight=1)
@@ -97,7 +103,6 @@ class RagClient(tk.Tk):
         )
         self.response_text.grid(row=0, column=0, sticky="nsew")
 
-        # Bottom frame for copy button
         bottom_frame = tk.Frame(self, bg=self.bg_color)
         bottom_frame.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 20))
 
@@ -116,8 +121,12 @@ class RagClient(tk.Tk):
         )
         self.copy_button.pack(side=tk.RIGHT)
 
-        # Start connection check
         threading.Thread(target=self.check_connection, daemon=True).start()
+
+    def adjust_entry_height(self, event):
+        """Dynamically adjust the height of the question entry based on content"""
+        lines = int(self.question_entry.index("end-1c").split(".")[0])
+        self.question_entry.configure(height=min(max(lines, 1), 10))
 
     def check_connection(self):
         try:
@@ -134,12 +143,17 @@ class RagClient(tk.Tk):
             messagebox.showerror("Error", "Not connected to the server")
             return
 
-        question = self.question_entry.get().strip()
+        question = self.question_entry.get("1.0", tk.END).strip()
         if not question:
             messagebox.showwarning("Warning", "Please enter a question")
             return
 
-        self.ask_button.config(text="Generating answer...", state=tk.DISABLED)
+        self.ask_button.config(
+            text="Generating answer...",
+            state=tk.DISABLED,
+            bg="#388E3C",  # Slightly darker green
+            fg="white",
+        )
         self.response_text.delete(1.0, tk.END)
         thread = threading.Thread(target=self.make_request, args=(question,))
         thread.start()
@@ -165,14 +179,14 @@ class RagClient(tk.Tk):
                 self.response_text.tag_config("error", foreground="#D32F2F")
             else:
                 answer = data.get("answer", "")
-                # Instead of stripping everything, preserve link URLs
                 plain_text = answer.replace("**", "").replace("*", "").replace("#", "")
-                # Replace Markdown links [text](URL) with "text (URL)"
                 import re
 
                 plain_text = re.sub(r"\[(.*?)\]\((.*?)\)", r"\1 (\2)", plain_text)
                 self.response_text.insert(tk.END, plain_text)
-            self.ask_button.config(text="Ask", state=tk.NORMAL)
+            self.ask_button.config(
+                text="Ask", state=tk.NORMAL, bg=self.button_color, fg="white"
+            )
 
         self.after(0, _update)
 
