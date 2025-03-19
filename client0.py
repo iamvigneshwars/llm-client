@@ -1,6 +1,7 @@
 import json
 import os
 import threading
+import re
 from datetime import datetime
 
 import customtkinter as ctk
@@ -121,7 +122,7 @@ class ModernChatbot(ctk.CTk):
 
     def check_connection(self):
         try:
-            response = requests.get("http://172.23.167.1:5000/health", timeout=5)
+            response = requests.get("http://172.23.162.4:5000/health", timeout=5)
             response.raise_for_status()
             self.connected = True
             self.update_status("Connected", "#4CAF50")
@@ -156,7 +157,7 @@ class ModernChatbot(ctk.CTk):
         try:
             payload = {"question": question}
             response = requests.post(
-                "http://172.23.167.1:5000/ask", json=payload, timeout=30
+                "http://172.23.162.4:5000/ask", json=payload, timeout=30
             )
             response.raise_for_status()
             data = response.json()
@@ -168,6 +169,21 @@ class ModernChatbot(ctk.CTk):
             self.update_status("Disconnected", "#EF5350")
             self.update_response({"error": str(e)}, question)
 
+    def process_markdown(self, text):
+        def replace_link(match):
+            link_text = match.group(1)
+            link_url = match.group(2)
+            return f"{link_text} ({link_url})"
+        
+        link_pattern = r'\[(.*?)\]\(((?:[^()]*|\([^()]*\))*)\)'
+        processed_text = re.sub(link_pattern, replace_link, text)
+        
+        processed_text = processed_text.replace("**", "").replace("*", "")
+        
+        processed_text = re.sub(r'^#+\s+', '', processed_text, flags=re.MULTILINE)
+        
+        return processed_text
+
     def update_response(self, data, question):
         self.chat_display.configure(state="normal")
 
@@ -177,10 +193,7 @@ class ModernChatbot(ctk.CTk):
             self.chat_display.tag_config("error", foreground="#EF5350")
         else:
             answer = data.get("answer", "")
-            plain_text = answer.replace("**", "").replace("*", "").replace("#", "")
-            import re
-
-            plain_text = re.sub(r"\[(.*?)\]\((.*?)\)", r"\1 (\2)", plain_text)
+            plain_text = self.process_markdown(answer)
             self.chat_display.insert("end", f"Bot: {plain_text}")
 
         self.chat_display.configure(state="disabled")
@@ -202,12 +215,11 @@ class ModernChatbot(ctk.CTk):
         if not full_text:
             return
 
-        # Extract only the Bot's response (everything after "Bot: ")
         bot_response = ""
         lines = full_text.split("\n")
         for line in lines:
             if line.startswith("Bot: "):
-                bot_response = line[5:]  # Remove "Bot: " prefix
+                bot_response = line[5:]
                 break
 
         if bot_response:
