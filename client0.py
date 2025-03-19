@@ -84,7 +84,7 @@ class ModernChatbot(ctk.CTk):
             width=120,
             height=40,
             font=("Roboto", 14, "bold"),
-            corner_radius=8,
+            corner_radius=0,
             fg_color="#2ECC71",
             hover_color="#27AE60",
         )
@@ -98,7 +98,7 @@ class ModernChatbot(ctk.CTk):
             width=120,
             height=40,
             font=("Roboto", 14, "bold"),
-            corner_radius=8,
+            corner_radius=0,
         )
         self.copy_button.grid(row=1, column=0)
 
@@ -113,9 +113,9 @@ class ModernChatbot(ctk.CTk):
         else:
             self.history = []
 
-    def save_history(self, question, response):
+    def save_history(self, question, response, metadata):
         timestamp = datetime.now().isoformat()
-        entry = {"timestamp": timestamp, "question": question, "response": response}
+        entry = {"timestamp": timestamp, "question": question, "response": response, "metadata": metadata}
         self.history.append(entry)
         with open(self.history_file, "w") as f:
             json.dump(self.history, f, indent=2)
@@ -200,7 +200,8 @@ class ModernChatbot(ctk.CTk):
         self.send_button.configure(state="normal", text="Send")
 
         response = data.get("answer", data.get("error", "Unknown error"))
-        self.save_history(question, response)
+        metadata = data.get("metadata", "Unknown metadata")
+        self.save_history(question, response, metadata)
 
     def show_error(self, message):
         self.chat_display.configure(state="normal")
@@ -210,22 +211,24 @@ class ModernChatbot(ctk.CTk):
         self.chat_display.configure(state="disabled")
 
     def copy_response(self):
-        # Get the full text from the chat display
         full_text = self.chat_display.get("1.0", "end-1c").strip()
         if not full_text:
             return
 
         bot_response = ""
+        bot_part = False
         lines = full_text.split("\n")
-        for line in lines:
+        for i, line in enumerate(lines):
             if line.startswith("Bot: "):
+                bot_part = True
                 bot_response = line[5:]
-                break
+                continue
+            if bot_part and i > 0:
+                bot_response += "\n" + line
 
         if bot_response:
             self.clipboard_clear()
             self.clipboard_append(bot_response)
-
 
 if __name__ == "__main__":
     app = ModernChatbot()
