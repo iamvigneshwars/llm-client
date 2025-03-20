@@ -122,7 +122,7 @@ class ModernChatbot(ctk.CTk):
 
     def check_connection(self):
         try:
-            response = requests.get("http://172.23.162.4:5000/health", timeout=5)
+            response = requests.get("http://172.23.162.4:5000/health", timeout=30)
             response.raise_for_status()
             self.connected = True
             self.update_status("Connected", "#4CAF50")
@@ -157,7 +157,7 @@ class ModernChatbot(ctk.CTk):
         try:
             payload = {"question": question}
             response = requests.post(
-                "http://172.23.162.4:5000/ask", json=payload, timeout=30
+                "http://172.23.162.4:5000/ask", json=payload, timeout=120
             )
             response.raise_for_status()
             data = response.json()
