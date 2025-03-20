@@ -93,7 +93,7 @@ class ModernChatbot(ctk.CTk):
         # Copy Response button
         self.copy_button = ctk.CTkButton(
             self.button_frame,
-            text="Copy Response",
+            text="Copy",
             command=self.copy_response,
             width=120,
             height=40,

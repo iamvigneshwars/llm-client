@@ -1,0 +1,119 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 80vw;
+  box-sizing: border-box;
+}
+
+.main-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background-color: #1a1a1a;
+}
+
+.chat-display {
+  flex: 1;
+  padding: 20px;
+  margin: 20px 20px 10px 20px;
+  overflow-y: auto;
+  background-color: #2b2b2b;
+  border-radius: 20px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #e0e0e0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.input-frame {
+  padding: 0 20px 20px 20px;
+}
+
+.status-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10px;
+  font-weight: bold;
+  font-family: 'Roboto', sans-serif;
+  font-size: 13px;
+}
+
+.input-container {
+  display: flex;
+  gap: 10px;
+}
+
+.input-field {
+  flex: 1;
+  height: 65px;
+  padding: 12px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  background-color: #333;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 20px;
+  resize: none;
+  outline: none;
+}
+
+.button-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.button-frame button {
+  width: 120px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.send-button {
+  background-color: #2ecc71;
+  color: white;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #27ae60;
+}
+
+.copy-button {
+  background-color: #3498db;
+  color: white;
+}
+
+.copy-button:hover:not(:disabled) {
+  background-color: #2980b9;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #ef5350;
+}
