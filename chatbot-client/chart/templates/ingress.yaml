@@ -1,14 +1,20 @@
-{{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: llm-client
   labels:
     app: llm-client
-  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/use-port-in-redirects: "true"
+    nginx.ingress.kubernetes.io/permanent-redirect-code: "301"
+    nginx.org/server-snippets: |
+      if ($scheme = https) {
+        return 301 http://$host$request_uri;
+      }
 spec:
   ingressClassName: nginx
   rules:
@@ -22,4 +28,3 @@ spec:
                 name: llm-client
                 port:
                   number: {{ .Values.service.port }}
-{{- end }}

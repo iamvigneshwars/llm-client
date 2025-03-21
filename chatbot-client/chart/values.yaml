@@ -3,7 +3,7 @@ replicaCount: 2
 
 image:
   repository: iamvigneshwars/llm-client
-  tag: v2
+  tag:  v2
   pullPolicy: Always
 
 service:
@@ -12,10 +12,6 @@ service:
   targetPort: 3000
 
 ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
   host: userofficetestbot.diamond.ac.uk
   path: /
   pathType: Prefix
